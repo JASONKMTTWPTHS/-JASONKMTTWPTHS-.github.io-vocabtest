@@ -41,7 +41,7 @@
     let questionNo = 1;
     let score = 0;
     let totalQuestions;
-    let words = {};
+    let words = {}; // 每次開始測驗時，重置單字庫
     let wordList = [];
     let correctAnswer;
 
@@ -147,8 +147,11 @@
 
     // 重新開始測驗
     function restart() {
+        // 重置變數
         questionNo = 1;
         score = 0;
+        words = {}; // 清空單字庫
+        wordList = []; // 清空單字列表
         document.getElementById("end-section").style.display = "none";
         document.getElementById("start-section").style.display = "block";
         document.getElementById("result").innerText = '';
