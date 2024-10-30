@@ -41,9 +41,17 @@
     let questionNo = 1;
     let score = 0;
     let totalQuestions;
-    let words = {}; // 每次開始測驗時，重置單字庫
+    let words = {};
     let wordList = [];
-    let correctAnswer;
+    let correctAnswer, quizWord;
+
+    // 語音播放功能
+    function speakText(text, lang = 'en') {
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = lang;
+        utterance.rate = 1; // 正常語速
+        speechSynthesis.speak(utterance);
+    }
 
     // 啟動測驗
     document.getElementById("startForm").addEventListener("submit", function(event) {
@@ -52,12 +60,11 @@
         const input = document.getElementById("wordList").value.trim();
 
         if (input) {
-            // 將用戶輸入的單字格式化
             const rows = input.split('\n');
             rows.forEach(row => {
                 const [word, definition] = row.split('/');
                 if (word && definition) {
-                    words[word.trim()] = definition.trim();  // 儲存單字和定義
+                    words[word.trim()] = definition.trim();
                 }
             });
 
@@ -79,25 +86,27 @@
     // 隨機生成問題和選項
     function generateQA() {
         let wordIndex = Math.floor(Math.random() * wordList.length);
-        let quizWord = wordList[wordIndex];
+        quizWord = wordList[wordIndex];
         correctAnswer = words[quizWord];
-        
-        let choices = [correctAnswer];  // 將正確答案作為一個選項
-        let usedChoices = new Set(choices); // 用來追蹤已使用的選項
+
+        let choices = [correctAnswer];
+        let usedChoices = new Set(choices);
 
         while (choices.length < 4) {
             let randomWord = Object.values(words)[Math.floor(Math.random() * wordList.length)];
             if (!usedChoices.has(randomWord)) {
-                choices.push(randomWord);  // 確保選項不重複
-                usedChoices.add(randomWord); // 添加到已使用集合
+                choices.push(randomWord);
+                usedChoices.add(randomWord);
             }
         }
-        choices.sort(() => Math.random() - 0.5);  // 隨機排列選項
+        choices.sort(() => Math.random() - 0.5);
 
-        // 顯示問題和選項
         document.getElementById("questionAndChoices").innerHTML = `問題 ${questionNo}: 單字 "${quizWord}" 的意思是什麼？<br>
             1. ${choices[0]}<br> 2. ${choices[1]}<br> 3. ${choices[2]}<br> 4. ${choices[3]}`;
-        document.getElementById("answer").value = '';  // 自動清除輸入框
+        document.getElementById("answer").value = '';
+
+        // 發音單字
+        speakText(quizWord, 'en');
     }
 
     // 提交答案
@@ -105,34 +114,41 @@
         event.preventDefault();
         let answer = document.getElementById("answer").value.trim();
 
-        // 判斷用戶是否選擇退出
         if (answer === "5") {
             endQuiz("您已選擇退出測驗。");
             return;
         }
 
-        // 判斷答案
-        const selectedIndex = parseInt(answer) - 1; // 將輸入的選項轉為索引（0-3）
+        const selectedIndex = parseInt(answer) - 1;
         if (selectedIndex >= 0 && selectedIndex < 4) {
             const selectedAnswer = document.getElementById("questionAndChoices").innerText
-                .split('\n')[selectedIndex + 1].split('. ')[1]; // 獲取選擇的答案
+                .split('\n')[selectedIndex + 1].split('. ')[1];
             if (correctAnswer === selectedAnswer) {
                 document.getElementById("result").innerText = "正確!";
+                document.getElementById("result").style.color = "green";
                 score++;
+                setTimeout(nextQuestion, 1000);
             } else {
                 document.getElementById("result").innerText = `錯誤! 正確答案是: ${correctAnswer}`;
+                document.getElementById("result").style.color = "red";
+                // 直接播放英文翻譯的發音
+                speakText(quizWord, 'en');
+                setTimeout(nextQuestion, 3000);
             }
         } else {
             document.getElementById("result").innerText = "請輸入有效的選項（1-4）!";
         }
+    });
 
+    // 跳到下一題
+    function nextQuestion() {
         questionNo++;
         if (questionNo > totalQuestions) {
             endQuiz();
         } else {
             generateQA();
         }
-    });
+    }
 
     // 結束測驗
     function endQuiz(message) {
@@ -147,18 +163,16 @@
 
     // 重新開始測驗
     function restart() {
-        // 重置變數
         questionNo = 1;
         score = 0;
-        words = {}; // 清空單字庫
-        wordList = []; // 清空單字列表
+        words = {};
+        wordList = [];
         document.getElementById("end-section").style.display = "none";
         document.getElementById("start-section").style.display = "block";
         document.getElementById("result").innerText = '';
         document.getElementById("answer").value = '';
-        document.getElementById("wordList").value = ''; // 清空輸入框
+        document.getElementById("wordList").value = '';
     }
-
 </script>
 </body>
 </html>
